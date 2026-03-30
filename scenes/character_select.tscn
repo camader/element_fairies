@@ -1,0 +1,90 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/character_select.gd" id="1_script"]
+
+[node name="CharacterSelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.08, 0.12, 0.22, 1)
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -350.0
+offset_top = -200.0
+offset_right = 350.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 48
+text = "Choose Your Fairy"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Each fairy has a unique element. Rescue the Rainbow Fairy!"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 20)
+
+[node name="ButtonGrid" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 30
+
+[node name="FireButton" type="Button" parent="VBox/ButtonGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(140, 120)
+theme_override_font_sizes/font_size = 18
+text = "🔥
+Fire Fairy"
+
+[node name="WaterButton" type="Button" parent="VBox/ButtonGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(140, 120)
+theme_override_font_sizes/font_size = 18
+text = "💧
+Water Fairy"
+
+[node name="EarthButton" type="Button" parent="VBox/ButtonGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(140, 120)
+theme_override_font_sizes/font_size = 18
+text = "🌿
+Earth Fairy"
+
+[node name="IceButton" type="Button" parent="VBox/ButtonGrid"]
+layout_mode = 2
+custom_minimum_size = Vector2(140, 120)
+theme_override_font_sizes/font_size = 18
+text = "❄️
+Ice Fairy"
+
+[connection signal="pressed" from="VBox/ButtonGrid/FireButton" to="." method="_on_fire_button_pressed"]
+[connection signal="pressed" from="VBox/ButtonGrid/WaterButton" to="." method="_on_water_button_pressed"]
+[connection signal="pressed" from="VBox/ButtonGrid/EarthButton" to="." method="_on_earth_button_pressed"]
+[connection signal="pressed" from="VBox/ButtonGrid/IceButton" to="." method="_on_ice_button_pressed"]

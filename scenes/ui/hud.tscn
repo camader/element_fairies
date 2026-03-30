@@ -1,0 +1,129 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/ui/minimap.gd" id="2_minimap"]
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_script")
+
+[node name="TopBar" type="HBoxContainer" parent="."]
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 10.0
+offset_bottom = 50.0
+grow_horizontal = 2
+theme_override_constants/separation = 20
+
+[node name="LevelLabel" type="Label" parent="TopBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.8, 0.7, 0.4, 1)
+text = "Level 1 - Volcanic Ridges"
+
+[node name="StarLabel" type="Label" parent="TopBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "★ 0 / 3"
+
+[node name="FairyLabel" type="Label" parent="TopBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 0.3, 0.1, 1)
+text = "Fire Fairy"
+
+[node name="BossIndicator" type="Label" parent="TopBar"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0, 1)
+theme_override_font_sizes/font_size = 20
+text = "⚡ Boss Challenge Available!"
+
+[node name="PowerIndicator" type="Label" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -35.0
+offset_right = 150.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(1, 0.9, 0.3, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+text = "[F] Power  READY"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="FairySwitcher" type="HBoxContainer" parent="."]
+visible = false
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -30.0
+offset_right = 600.0
+offset_bottom = -5.0
+grow_vertical = 0
+theme_override_constants/separation = 15
+
+[node name="MinimapPanel" type="Panel" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -260.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 260.0
+grow_horizontal = 0
+
+[node name="Minimap" type="Control" parent="MinimapPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 5.0
+offset_top = 5.0
+offset_right = -5.0
+offset_bottom = -5.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_minimap")
+
+[node name="CluePopup" type="Panel" parent="."]
+visible = false
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -250.0
+offset_top = -100.0
+offset_right = 250.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="CluePopup"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 10
+
+[node name="ClueLabel" type="Label" parent="CluePopup/MarginContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Clue discovered!"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
