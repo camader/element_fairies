@@ -2,8 +2,7 @@ extends Control
 
 ## In-game pause menu with save, load, resume, and exit options
 
-var _slot_panel: Panel = null
-var _slot_mode: String = ""
+var _panel: Panel = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -64,7 +63,7 @@ func _unhandled_input(event: InputEvent) -> void:
 # ── Actions ────────────────────────────────────────────────────────────────
 
 func _on_resume() -> void:
-	_close_slot_picker()
+	_close_panel()
 	get_tree().paused = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	var player := get_tree().get_first_node_in_group("player")
@@ -73,40 +72,42 @@ func _on_resume() -> void:
 	queue_free()
 
 func _on_save() -> void:
-	if SaveManager.active_slot > 0:
-		SaveManager.save_game()
-		var hud := get_tree().get_first_node_in_group("hud")
-		if hud and hud.has_method("show_save_toast"):
-			hud.show_save_toast("Game saved")
-		_on_resume()
-	else:
-		_show_slot_picker("save")
+	_show_save_picker()
 
 func _on_load() -> void:
-	_show_slot_picker("load")
+	_show_load_picker()
 
 func _on_exit() -> void:
-	if SaveManager.active_slot > 0:
-		SaveManager.save_game()
+	if SaveManager.active_save_id != "":
+		SaveManager.autosave()
 	get_tree().paused = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	get_tree().change_scene_to_file("res://scenes/title_screen.tscn")
 
-# ── Slot picker ────────────────────────────────────────────────────────────
+# ── Modal helpers ─────────────────────────────────────────────────────────
 
-func _show_slot_picker(mode: String) -> void:
-	if _slot_panel:
-		_slot_panel.queue_free()
-	_slot_mode = mode
+func _close_panel() -> void:
+	if _panel:
+		_panel.queue_free()
+		_panel = null
 
-	_slot_panel = Panel.new()
-	_slot_panel.set_anchors_preset(Control.PRESET_CENTER)
-	_slot_panel.custom_minimum_size = Vector2(500, 380)
-	_slot_panel.offset_left = -250
-	_slot_panel.offset_top = -190
-	_slot_panel.offset_right = 250
-	_slot_panel.offset_bottom = 190
-	add_child(_slot_panel)
+func _create_modal(width: float, height: float) -> VBoxContainer:
+	_close_panel()
+	_panel = Panel.new()
+	_panel.set_anchors_preset(Control.PRESET_CENTER)
+	_panel.custom_minimum_size = Vector2(width, height)
+	_panel.offset_left = -width / 2.0
+	_panel.offset_top = -height / 2.0
+	_panel.offset_right = width / 2.0
+	_panel.offset_bottom = height / 2.0
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.15, 0.15, 0.2, 1.0)
+	panel_style.corner_radius_top_left = 8
+	panel_style.corner_radius_top_right = 8
+	panel_style.corner_radius_bottom_left = 8
+	panel_style.corner_radius_bottom_right = 8
+	_panel.add_theme_stylebox_override("panel", panel_style)
+	add_child(_panel)
 
 	var vbox := VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -115,57 +116,222 @@ func _show_slot_picker(mode: String) -> void:
 	vbox.offset_right = -20
 	vbox.offset_bottom = -20
 	vbox.add_theme_constant_override("separation", 12)
-	_slot_panel.add_child(vbox)
+	_panel.add_child(vbox)
+	return vbox
+
+func _format_save_label(info: Dictionary, display_name: String) -> String:
+	var fairy_name: String = GameState.FAIRY_NAMES.get(info.get("fairy", 0), "Fire Fairy")
+	return "%s — Level %d | Stars: %d | %s\n%s" % [
+		display_name,
+		info.get("level", 1),
+		info.get("stars", 0),
+		fairy_name,
+		info.get("timestamp", ""),
+	]
+
+func _show_save_toast(text: String) -> void:
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("show_save_toast"):
+		hud.show_save_toast(text)
+
+# ── Save picker ───────────────────────────────────────────────────────────
+
+func _show_save_picker() -> void:
+	var user_saves := SaveManager.get_user_saves()
+
+	var vbox := _create_modal(520, 450)
 
 	var title := Label.new()
-	title.text = "Save to Slot" if mode == "save" else "Load Save Slot"
+	title.text = "Save Game"
 	title.add_theme_font_size_override("font_size", 26)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
-	for i in range(1, SaveManager.MAX_SLOTS + 1):
-		var slot_btn := Button.new()
-		slot_btn.custom_minimum_size = Vector2(0, 55)
-		slot_btn.add_theme_font_size_override("font_size", 16)
+	# New save button
+	var new_save_btn := Button.new()
+	new_save_btn.text = "+ Create New Save"
+	new_save_btn.custom_minimum_size = Vector2(0, 45)
+	new_save_btn.add_theme_font_size_override("font_size", 18)
+	new_save_btn.pressed.connect(func():
+		_close_panel()
+		_show_save_name_input()
+	)
+	vbox.add_child(new_save_btn)
 
-		var info := SaveManager.get_slot_info(i)
-		if info.is_empty():
-			slot_btn.text = "Slot %d - Empty" % i
-			if mode == "load":
-				slot_btn.disabled = true
-		else:
-			var fairy_name: String = GameState.FAIRY_NAMES.get(info.get("fairy", 0), "Fire Fairy")
-			slot_btn.text = "Slot %d - Level %d | Stars: %d | %s\n%s" % [
-				i, info.get("level", 1), info.get("stars", 0),
-				fairy_name, info.get("timestamp", "")
-			]
+	# Quick save to current slot if active
+	if SaveManager.active_save_id != "" and not SaveManager.active_save_id.begins_with("autosave_"):
+		var quick_btn := Button.new()
+		quick_btn.text = "Quick Save (current)"
+		quick_btn.custom_minimum_size = Vector2(0, 40)
+		quick_btn.add_theme_font_size_override("font_size", 16)
+		quick_btn.pressed.connect(func():
+			_close_panel()
+			SaveManager.save_game()
+			_show_save_toast("Game saved")
+			_on_resume()
+		)
+		vbox.add_child(quick_btn)
 
-		var slot_idx := i
-		slot_btn.pressed.connect(_on_slot_selected.bind(slot_idx))
-		vbox.add_child(slot_btn)
+	if not user_saves.is_empty():
+		var sep_label := Label.new()
+		sep_label.text = "— or overwrite existing —"
+		sep_label.add_theme_font_size_override("font_size", 14)
+		sep_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+		sep_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vbox.add_child(sep_label)
+
+		var scroll := ScrollContainer.new()
+		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		scroll.custom_minimum_size = Vector2(0, 180)
+		vbox.add_child(scroll)
+
+		var list := VBoxContainer.new()
+		list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		list.add_theme_constant_override("separation", 8)
+		scroll.add_child(list)
+
+		for entry in user_saves:
+			var save_id: String = entry.get("id", "")
+			var display_name: String = entry.get("display_name", save_id)
+			var info := SaveManager.get_save_info(save_id)
+
+			var save_btn := Button.new()
+			save_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			save_btn.custom_minimum_size = Vector2(0, 50)
+			save_btn.add_theme_font_size_override("font_size", 15)
+			save_btn.text = _format_save_label(info, display_name)
+			var sid := save_id
+			var sname := display_name
+			save_btn.pressed.connect(func():
+				_close_panel()
+				SaveManager.save_game(sid, sname)
+				_show_save_toast("Saved to \"%s\"" % sname)
+				_on_resume()
+			)
+			list.add_child(save_btn)
 
 	var back_btn := Button.new()
 	back_btn.text = "Back"
 	back_btn.custom_minimum_size = Vector2(0, 35)
 	back_btn.add_theme_font_size_override("font_size", 16)
-	back_btn.pressed.connect(_close_slot_picker)
+	back_btn.pressed.connect(_close_panel)
 	vbox.add_child(back_btn)
 
-func _on_slot_selected(slot: int) -> void:
-	_close_slot_picker()
-	if _slot_mode == "save":
-		SaveManager.active_slot = slot
-		SaveManager.save_game()
-		var hud := get_tree().get_first_node_in_group("hud")
-		if hud and hud.has_method("show_save_toast"):
-			hud.show_save_toast("Saved to slot %d" % slot)
-		_on_resume()
-	elif _slot_mode == "load":
-		get_tree().paused = false
-		SaveManager.load_game(slot)
-		queue_free()
+func _show_save_name_input() -> void:
+	var vbox := _create_modal(420, 190)
 
-func _close_slot_picker() -> void:
-	if _slot_panel:
-		_slot_panel.queue_free()
-		_slot_panel = null
+	var title := Label.new()
+	title.text = "Save As"
+	title.add_theme_font_size_override("font_size", 26)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	var name_input := LineEdit.new()
+	name_input.placeholder_text = "Enter save name..."
+	name_input.custom_minimum_size = Vector2(0, 40)
+	name_input.add_theme_font_size_override("font_size", 18)
+	vbox.add_child(name_input)
+
+	var hbox := HBoxContainer.new()
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_theme_constant_override("separation", 20)
+	vbox.add_child(hbox)
+
+	var save_btn := Button.new()
+	save_btn.text = "Save"
+	save_btn.custom_minimum_size = Vector2(120, 40)
+	save_btn.add_theme_font_size_override("font_size", 18)
+	save_btn.pressed.connect(func():
+		var save_name := name_input.text.strip_edges()
+		if save_name == "":
+			save_name = "Save %s" % Time.get_datetime_string_from_system().replace("T", " ").left(16)
+		var save_id := SaveManager._generate_save_id()
+		_close_panel()
+		SaveManager.save_game(save_id, save_name)
+		_show_save_toast("Saved as \"%s\"" % save_name)
+		_on_resume()
+	)
+	hbox.add_child(save_btn)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(120, 40)
+	cancel_btn.add_theme_font_size_override("font_size", 18)
+	cancel_btn.pressed.connect(_close_panel)
+	hbox.add_child(cancel_btn)
+
+	name_input.grab_focus()
+
+# ── Load picker ───────────────────────────────────────────────────────────
+
+func _show_load_picker() -> void:
+	var all_saves := SaveManager.get_all_saves()
+
+	var vbox := _create_modal(520, 450)
+
+	var title := Label.new()
+	title.text = "Load Game"
+	title.add_theme_font_size_override("font_size", 26)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	if all_saves.is_empty():
+		var empty_lbl := Label.new()
+		empty_lbl.text = "No saved games found."
+		empty_lbl.add_theme_font_size_override("font_size", 18)
+		empty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vbox.add_child(empty_lbl)
+	else:
+		var scroll := ScrollContainer.new()
+		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		scroll.custom_minimum_size = Vector2(0, 300)
+		vbox.add_child(scroll)
+
+		var list := VBoxContainer.new()
+		list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		list.add_theme_constant_override("separation", 8)
+		scroll.add_child(list)
+
+		for entry in all_saves:
+			var save_id: String = entry.get("id", "")
+			var display_name: String = entry.get("display_name", save_id)
+			var is_auto: bool = entry.get("is_autosave", false)
+			var info := SaveManager.get_save_info(save_id)
+
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 8)
+			list.add_child(row)
+
+			var load_btn := Button.new()
+			load_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			load_btn.custom_minimum_size = Vector2(0, 50)
+			load_btn.add_theme_font_size_override("font_size", 15)
+			var prefix := "[Auto] " if is_auto else ""
+			load_btn.text = prefix + _format_save_label(info, display_name)
+			var sid := save_id
+			load_btn.pressed.connect(func():
+				_close_panel()
+				get_tree().paused = false
+				SaveManager.load_game(sid)
+				queue_free()
+			)
+			row.add_child(load_btn)
+
+			var del_btn := Button.new()
+			del_btn.text = "✕"
+			del_btn.custom_minimum_size = Vector2(40, 50)
+			del_btn.add_theme_font_size_override("font_size", 18)
+			del_btn.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
+			var sid2 := save_id
+			del_btn.pressed.connect(func():
+				SaveManager.delete_save(sid2)
+				_show_load_picker()  # Refresh
+			)
+			row.add_child(del_btn)
+
+	var back_btn := Button.new()
+	back_btn.text = "Back"
+	back_btn.custom_minimum_size = Vector2(0, 35)
+	back_btn.add_theme_font_size_override("font_size", 16)
+	back_btn.pressed.connect(_close_panel)
+	vbox.add_child(back_btn)

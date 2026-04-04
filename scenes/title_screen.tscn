@@ -67,6 +67,13 @@ size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 24
 text = "Load Game"
 
+[node name="MiniGamesButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(250, 50)
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 24
+text = "Mini Games"
+
 [node name="ExitButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 custom_minimum_size = Vector2(250, 50)
@@ -77,4 +84,5 @@ text = "Exit"
 [connection signal="pressed" from="VBoxContainer/ContinueButton" to="." method="_on_continue_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/NewGameButton" to="." method="_on_new_game_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/LoadButton" to="." method="_on_load_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/MiniGamesButton" to="." method="_on_mini_games_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ExitButton" to="." method="_on_exit_button_pressed"]

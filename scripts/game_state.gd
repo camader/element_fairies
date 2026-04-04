@@ -54,6 +54,15 @@ const MINI_GAME_TYPES := [
 	"jigsaw_puzzle",
 	"maze_puzzle",
 	"word_search",
+	"memory_match",
+	"simon_says",
+	"pattern_completion",
+	"find_the_fairy",
+	"sliding_puzzle",
+	"pipe_puzzle",
+	"tangram",
+	"hangman",
+	"scrambled_letters",
 ]
 
 # Level configuration

@@ -13,8 +13,8 @@ func start_new_campaign() -> void:
 func start_level(level: int) -> void:
 	GameState.start_level(level)
 	# Auto-save at level start so Continue resumes from correct level
-	if SaveManager.active_slot > 0:
-		SaveManager.save_game()
+	if SaveManager.active_save_id != "":
+		SaveManager.autosave()
 	level_started.emit(level)
 	get_tree().change_scene_to_file("res://scenes/level_intro.tscn")
 
@@ -30,8 +30,8 @@ func on_boss_defeated() -> void:
 			GameState.unlocked_fairies.append(rescued)
 
 	# Auto-save after boss defeat (captures unlocked fairy + completion)
-	if SaveManager.active_slot > 0:
-		SaveManager.save_game()
+	if SaveManager.active_save_id != "":
+		SaveManager.autosave()
 
 	level_completed.emit(level)
 

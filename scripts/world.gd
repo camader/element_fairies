@@ -238,8 +238,8 @@ func _on_star_autosave(_total: int) -> void:
 	_autosave()
 
 func _autosave() -> void:
-	if SaveManager.active_slot > 0:
-		SaveManager.save_game()
+	if SaveManager.active_save_id != "":
+		SaveManager.autosave()
 		_show_save_toast("Game saved")
 
 func _show_save_toast(text: String) -> void:
