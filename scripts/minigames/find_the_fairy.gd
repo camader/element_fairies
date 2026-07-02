@@ -4,7 +4,7 @@ extends "res://scripts/minigames/mini_game_base.gd"
 ## A 4x4 grid of face-down cards hides one fairy - find it in 3 guesses using proximity hints
 
 const GRID_SIZE := 4
-const MAX_GUESSES := 3
+const MAX_GUESSES := 4
 const CARD_SIZE := 70.0
 
 var fairy_pos := Vector2i.ZERO
